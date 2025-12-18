@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Muure Positioner</string>
+    <string name="title_activity_main">Muure Positioner</string>
+    <string name="package_name">com.muure.positioner</string>
+    <string name="custom_url_scheme">com.muure.positioner</string>
+</resources>
