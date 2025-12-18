@@ -71,7 +71,11 @@ function App() {
   const getCurrentPosition = async () => {
     try {
       setLocationError('');
-      const coordinates = await Geolocation.getCurrentPosition();
+      const coordinates = await Geolocation.getCurrentPosition({
+        enableHighAccuracy: true,
+        timeout: 10000,
+        maximumAge: 0
+      });
       setLatitude(coordinates.coords.latitude);
       setLongitude(coordinates.coords.longitude);
     } catch (error) {
