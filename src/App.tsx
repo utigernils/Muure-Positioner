@@ -1,24 +1,88 @@
-import { useState } from 'react';
-import { Heart } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Heart, MapPin } from 'lucide-react';
+import { Geolocation } from '@capacitor/geolocation';
 import { supabase } from './lib/supabase';
 
+
+const GOOGLE_MAPS_API_KEY = 'AIzaSyD-5T9to2QdgxWxXkBO4TB75nrptp3RNxY';
+const mapStyleId = '12faf718a36ce4b050d9c71d'; 
+
 function App() {
-  const [latitude, setLatitude] = useState('');
-  const [longitude, setLongitude] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [locationError, setLocationError] = useState('');
+  const mapRef = useRef<HTMLDivElement>(null);
+  const googleMapRef = useRef<google.maps.Map | null>(null);
+  const markerRef = useRef<google.maps.Marker | null>(null);
 
-  const handleUpdate = async () => {
-    if (!latitude || !longitude) {
-      setMessage('Please enter both latitude and longitude');
-      return;
+  useEffect(() => {
+    // Load Google Maps script
+    const script = document.createElement('script');
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}`;
+    script.async = true;
+    script.defer = true;
+    document.head.appendChild(script);
+
+    script.onload = () => {
+      getCurrentPosition();
+    };
+
+    return () => {
+      document.head.removeChild(script);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (latitude !== null && longitude !== null && mapRef.current && window.google) {
+      initializeMap();
+    }
+  }, [latitude, longitude]);
+
+  const initializeMap = () => {
+    if (!mapRef.current || latitude === null || longitude === null) return;
+
+    const position = { lat: latitude, lng: longitude };
+
+    if (!googleMapRef.current) {
+      googleMapRef.current = new google.maps.Map(mapRef.current, {
+        center: position,
+        mapId: mapStyleId,
+        zoom: 15,
+        disableDefaultUI: true,
+        gestureHandling: "greedy",
+      });
+    } else {
+      googleMapRef.current.setCenter(position);
     }
 
-    const lat = parseFloat(latitude);
-    const lon = parseFloat(longitude);
+    // Update or create marker
+    if (markerRef.current) {
+      markerRef.current.setPosition(position);
+    } else {
+      markerRef.current = new google.maps.Marker({
+        position: position,
+        map: googleMapRef.current,
+      });
+    }
+  };
 
-    if (isNaN(lat) || isNaN(lon)) {
-      setMessage('Please enter valid numbers');
+  const getCurrentPosition = async () => {
+    try {
+      setLocationError('');
+      const coordinates = await Geolocation.getCurrentPosition();
+      setLatitude(coordinates.coords.latitude);
+      setLongitude(coordinates.coords.longitude);
+    } catch (error) {
+      setLocationError(`Error getting location: ${error.message}`);
+      console.error('Error getting location:', error);
+    }
+  };
+
+  const handleUpdate = async () => {
+    if (latitude === null || longitude === null) {
+      setMessage('Location not available. Please enable location permissions.');
       return;
     }
 
@@ -28,13 +92,11 @@ function App() {
     try {
       const { error } = await supabase
         .from('coordinates')
-        .insert([{ latitude: lat, longitude: lon }]);
+        .insert([{ latitude, longitude }]);
 
       if (error) throw error;
 
       setMessage('Coordinates updated successfully!');
-      setLatitude('');
-      setLongitude('');
     } catch (error) {
       setMessage(`Error: ${error.message}`);
     } finally {
@@ -51,51 +113,50 @@ function App() {
         </div>
       </header>
 
-      <main className="flex-1 flex items-center justify-center p-8">
-        <div className="w-full max-w-md">
-          <div className="space-y-6">
-            <div>
-              <label htmlFor="latitude" className="block text-sm font-medium text-black mb-2">
-                Latitude
-              </label>
-              <input
-                id="latitude"
-                type="text"
-                value={latitude}
-                onChange={(e) => setLatitude(e.target.value)}
-                placeholder="Enter latitude"
-                className="w-full px-4 py-3 border-2 border-black bg-white text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black"
-              />
+      <main className="flex-1 flex flex-col p-8">
+        <div className="w-full max-w-4xl mx-auto space-y-6">
+          {/* Current Location Display */}
+          <div className="bg-gray-50 border-2 border-black p-4">
+            <div className="flex items-center gap-2 mb-2">
+              <MapPin className="w-5 h-5 text-black" />
+              <h2 className="text-lg font-semibold text-black">Current Location</h2>
             </div>
-
-            <div>
-              <label htmlFor="longitude" className="block text-sm font-medium text-black mb-2">
-                Longitude
-              </label>
-              <input
-                id="longitude"
-                type="text"
-                value={longitude}
-                onChange={(e) => setLongitude(e.target.value)}
-                placeholder="Enter longitude"
-                className="w-full px-4 py-3 border-2 border-black bg-white text-black placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-black"
-              />
-            </div>
-
-            <button
-              onClick={handleUpdate}
-              disabled={loading}
-              className="w-full bg-black text-white py-3 px-6 font-semibold hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
-            >
-              {loading ? 'Updating...' : 'Update'}
-            </button>
-
-            {message && (
-              <p className={`text-sm text-center ${message.includes('Error') ? 'text-gray-600' : 'text-black'}`}>
-                {message}
-              </p>
+            {latitude !== null && longitude !== null ? (
+              <div className="text-sm text-black">
+                <p>Latitude: {latitude.toFixed(6)}</p>
+                <p>Longitude: {longitude.toFixed(6)}</p>
+              </div>
+            ) : (
+              <p className="text-sm text-gray-600">Loading location...</p>
             )}
+            {locationError && (
+              <p className="text-sm text-gray-600 mt-2">{locationError}</p>
+            )}
+            <button
+              onClick={getCurrentPosition}
+              className="mt-3 px-4 py-2 border-2 border-black bg-white text-black text-sm font-semibold hover:bg-gray-100 transition-colors"
+            >
+              Refresh Location
+            </button>
           </div>
+
+          {/* Map Container */}
+          <div ref={mapRef} className="border-2 border-black h-96 w-full" />
+
+          {/* Update Button */}
+          <button
+            onClick={handleUpdate}
+            disabled={loading || latitude === null || longitude === null}
+            className="w-full bg-black text-white py-3 px-6 font-semibold hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
+          >
+            {loading ? 'Updating...' : 'Update Location'}
+          </button>
+
+          {message && (
+            <p className={`text-sm text-center ${message.includes('Error') ? 'text-gray-600' : 'text-black'}`}>
+              {message}
+            </p>
+          )}
         </div>
       </main>
     </div>
