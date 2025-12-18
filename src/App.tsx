@@ -4,7 +4,7 @@ import { Geolocation } from '@capacitor/geolocation';
 import { supabase } from './lib/supabase';
 
 
-const GOOGLE_MAPS_API_KEY = 'AIzaSyD-5T9to2QdgxWxXkBO4TB75nrptp3RNxY';
+const GOOGLE_MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
 const mapStyleId = '12faf718a36ce4b050d9c71d'; 
 
 function App() {
