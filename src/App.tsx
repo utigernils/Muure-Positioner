@@ -105,18 +105,18 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col">
-      <header className="border-b border-black py-6 px-8">
+    <div className="h-screen bg-white flex flex-col overflow-hidden">
+      <header className="border-b border-black py-6 px-8 shrink-0">
         <div className="flex items-center gap-3">
           <Heart className="w-8 h-8 text-black fill-black" />
           <h1 className="text-3xl font-bold text-black">Muure</h1>
         </div>
       </header>
 
-      <main className="flex-1 flex flex-col p-8">
-        <div className="w-full max-w-4xl mx-auto space-y-6">
+      <main className="flex-1 flex flex-col p-4 sm:p-8 min-h-0">
+        <div className="w-full max-w-4xl mx-auto flex flex-col h-full gap-4 sm:gap-6">
           {/* Current Location Display */}
-          <div className="bg-gray-50 border-2 border-black p-4">
+          <div className="bg-gray-50 border-2 border-black p-4 shrink-0">
             <div className="flex items-center gap-2 mb-2">
               <MapPin className="w-5 h-5 text-black" />
               <h2 className="text-lg font-semibold text-black">Current Location</h2>
@@ -141,13 +141,13 @@ function App() {
           </div>
 
           {/* Map Container */}
-          <div ref={mapRef} className="border-2 border-black h-96 w-full" />
+          <div ref={mapRef} className="border-2 border-black flex-1 w-full min-h-0" />
 
           {/* Update Button */}
           <button
             onClick={handleUpdate}
             disabled={loading || latitude === null || longitude === null}
-            className="w-full bg-black text-white py-3 px-6 font-semibold hover:bg-gray-800 disabled:bg-gray-400 transition-colors"
+            className="w-full bg-black text-white py-3 px-6 font-semibold hover:bg-gray-800 disabled:bg-gray-400 transition-colors shrink-0"
           >
             {loading ? 'Updating...' : 'Update Location'}
           </button>
